@@ -24,7 +24,7 @@
         
         textarea { 
             width: 100%; padding: 8px; border: none; box-sizing: border-box; 
-            font-size: 16px; resize: both; overflow: hidden; /* HIDDEN to prevent scrollbars */
+            font-size: 16px; resize: both; overflow: hidden;
             font-family: inherit; background: transparent; 
             min-height: 40px; min-width: 100px;
         }
@@ -66,10 +66,9 @@
             renderGrid();
         };
 
-        // NEW: Auto-resize function
         function autoResize(ta) {
-            ta.style.height = 'auto'; // Reset height
-            ta.style.height = ta.scrollHeight + 'px'; // Set to content size
+            ta.style.height = 'auto';
+            ta.style.height = ta.scrollHeight + 'px';
         }
 
         function toggleMode() { isSplitMode = !isSplitMode; renderGrid(); }
@@ -83,7 +82,11 @@
             });
         }
 
-        // ... (renderGrid logic)
+        function addRow() { syncDataFromDOM(); gridData.rows++; renderGrid(); }
+        function subRow() { syncDataFromDOM(); if(gridData.rows > 1) gridData.rows--; renderGrid(); }
+        function addCol() { syncDataFromDOM(); gridData.cols++; renderGrid(); }
+        function subCol() { syncDataFromDOM(); if(gridData.cols > 1) gridData.cols--; renderGrid(); }
+
         function renderGrid() {
             const sheet = document.getElementById('spreadsheet');
             const container = document.getElementById('container');
@@ -97,7 +100,6 @@
             }
             
             const fragment = document.createDocumentFragment();
-            // ... (Header logic)
             fragment.appendChild(document.createElement('div'));
             for (let i = 0; i < gridData.cols; i++) {
                 const h1 = document.createElement('div'); h1.className = 'header'; h1.textContent = "Hanzi";
@@ -129,7 +131,6 @@
                     
                     cell.appendChild(ta);
                     fragment.appendChild(cell);
-                    // Call resize once on render
                     if (cellData && cellData.height) ta.style.height = cellData.height;
                     else setTimeout(() => autoResize(ta), 0);
                 }
@@ -146,7 +147,6 @@
             }
         }
 
-        // ... (Keep handleMouseDown, copy/keydown, and save functions as before)
         function handleMouseDown(e) {
             if (e.shiftKey && lastClickedCell) {
                 const r1 = parseInt(lastClickedCell.dataset.r), c1 = parseInt(lastClickedCell.dataset.c);
