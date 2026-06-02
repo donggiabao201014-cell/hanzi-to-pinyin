@@ -59,12 +59,20 @@
         let selectedCells = new Set();
         let lastClickedCell = null;
         let isSplitMode = false;
+        let saveTimeout;
 
         window.onload = () => {
             const saved = localStorage.getItem('pinyinData');
             if (saved) gridData = JSON.parse(saved);
             renderGrid();
         };
+
+        // --- Core Logic ---
+
+        function triggerAutoSave() {
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(manualSave, 1000);
+        }
 
         function autoResize(ta) {
             ta.style.height = 'auto';
@@ -82,10 +90,10 @@
             });
         }
 
-        function addRow() { syncDataFromDOM(); gridData.rows++; renderGrid(); }
-        function subRow() { syncDataFromDOM(); if(gridData.rows > 1) gridData.rows--; renderGrid(); }
-        function addCol() { syncDataFromDOM(); gridData.cols++; renderGrid(); }
-        function subCol() { syncDataFromDOM(); if(gridData.cols > 1) gridData.cols--; renderGrid(); }
+        function addRow() { syncDataFromDOM(); gridData.rows++; renderGrid(); manualSave(); }
+        function subRow() { syncDataFromDOM(); if(gridData.rows > 1) gridData.rows--; renderGrid(); manualSave(); }
+        function addCol() { syncDataFromDOM(); gridData.cols++; renderGrid(); manualSave(); }
+        function subCol() { syncDataFromDOM(); if(gridData.cols > 1) gridData.cols--; renderGrid(); manualSave(); }
 
         function renderGrid() {
             const sheet = document.getElementById('spreadsheet');
@@ -126,8 +134,8 @@
                     }
 
                     ta.onmousedown = handleMouseDown;
-                    ta.oninput = () => { handleInput(ta); autoResize(ta); syncDataFromDOM(); };
-                    ta.onmouseup = syncDataFromDOM;
+                    ta.oninput = () => { handleInput(ta); autoResize(ta); triggerAutoSave(); };
+                    ta.onmouseup = () => { syncDataFromDOM(); triggerAutoSave(); };
                     
                     cell.appendChild(ta);
                     fragment.appendChild(cell);
@@ -196,6 +204,7 @@
             if (e.key === 'Delete' || e.key === 'Backspace') {
                 selectedCells.forEach(ta => { ta.value = ''; autoResize(ta); });
                 syncDataFromDOM();
+                triggerAutoSave();
             }
         });
 
