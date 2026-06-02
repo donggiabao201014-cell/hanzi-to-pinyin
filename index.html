@@ -26,7 +26,7 @@
             width: 100%; padding: 8px; border: none; box-sizing: border-box; 
             font-size: 16px; resize: both; overflow: hidden;
             font-family: inherit; background: transparent; 
-            min-height: 40px; min-width: 100px;
+            min-height: 40px; min-width: 100px; display: block;
         }
         
         .pinyin-cell { background: #f8f9fa; }
@@ -35,7 +35,6 @@
         .btn-sub { background: #b02a2a; color: white; }
         .btn-mode { background: #555; color: white; }
     </style>
-    <link rel="icon" type="image/png" href="images.png">
 </head>
 <body>
 
@@ -66,8 +65,6 @@
             if (saved) gridData = JSON.parse(saved);
             renderGrid();
         };
-
-        // --- Core Logic ---
 
         function triggerAutoSave() {
             clearTimeout(saveTimeout);
@@ -139,8 +136,10 @@
                     
                     cell.appendChild(ta);
                     fragment.appendChild(cell);
+                    
+                    // Trigger expansion
                     if (cellData && cellData.height) ta.style.height = cellData.height;
-                    else setTimeout(() => autoResize(ta), 0);
+                    else autoResize(ta);
                 }
             }
             sheet.innerHTML = '';
