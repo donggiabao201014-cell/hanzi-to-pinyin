@@ -14,11 +14,7 @@
             transition: all 0.3s ease;
         }
         
-        #spreadsheet { 
-            display: grid; background: white; 
-            width: max-content; 
-        }
-
+        #spreadsheet { display: grid; background: white; width: max-content; }
         .mode-split { width: 100% !important; }
         .mode-split #spreadsheet { width: 100% !important; }
 
@@ -27,9 +23,9 @@
         .header { background: #2d6a4f; color: #ffffff; font-weight: bold; text-align: center; padding: 10px; position: sticky; top: 0; z-index: 10; }
         
         textarea { 
-            width: 100%; height: 100%; padding: 8px; border: none; box-sizing: border-box; 
-            font-size: 16px; resize: both; /* RESTORED RESIZING */
-            overflow: auto; font-family: inherit; background: transparent; 
+            width: 100%; padding: 8px; border: none; box-sizing: border-box; 
+            font-size: 16px; resize: both; overflow: hidden; /* HIDDEN to prevent scrollbars */
+            font-family: inherit; background: transparent; 
             min-height: 40px; min-width: 100px;
         }
         
@@ -70,28 +66,24 @@
             renderGrid();
         };
 
-        function toggleMode() {
-            isSplitMode = !isSplitMode;
-            renderGrid();
+        // NEW: Auto-resize function
+        function autoResize(ta) {
+            ta.style.height = 'auto'; // Reset height
+            ta.style.height = ta.scrollHeight + 'px'; // Set to content size
         }
+
+        function toggleMode() { isSplitMode = !isSplitMode; renderGrid(); }
 
         function syncDataFromDOM() {
             gridData.values = {};
             document.querySelectorAll('textarea').forEach(ta => {
-                // Save both text and specific width
                 gridData.values[`${ta.dataset.r},${ta.dataset.c}`] = { 
-                    text: ta.value, 
-                    width: ta.style.width,
-                    height: ta.style.height
+                    text: ta.value, width: ta.style.width, height: ta.style.height 
                 };
             });
         }
 
-        function addRow() { syncDataFromDOM(); gridData.rows++; renderGrid(); }
-        function subRow() { syncDataFromDOM(); if(gridData.rows > 1) gridData.rows--; renderGrid(); }
-        function addCol() { syncDataFromDOM(); gridData.cols++; renderGrid(); }
-        function subCol() { syncDataFromDOM(); if(gridData.cols > 1) gridData.cols--; renderGrid(); }
-
+        // ... (renderGrid logic)
         function renderGrid() {
             const sheet = document.getElementById('spreadsheet');
             const container = document.getElementById('container');
@@ -105,6 +97,7 @@
             }
             
             const fragment = document.createDocumentFragment();
+            // ... (Header logic)
             fragment.appendChild(document.createElement('div'));
             for (let i = 0; i < gridData.cols; i++) {
                 const h1 = document.createElement('div'); h1.className = 'header'; h1.textContent = "Hanzi";
@@ -131,26 +124,29 @@
                     }
 
                     ta.onmousedown = handleMouseDown;
-                    ta.oninput = handleInput;
-                    ta.onmouseup = syncDataFromDOM; // Save size on resize
+                    ta.oninput = () => { handleInput(ta); autoResize(ta); syncDataFromDOM(); };
+                    ta.onmouseup = syncDataFromDOM;
                     
                     cell.appendChild(ta);
                     fragment.appendChild(cell);
+                    // Call resize once on render
+                    if (cellData && cellData.height) ta.style.height = cellData.height;
+                    else setTimeout(() => autoResize(ta), 0);
                 }
             }
             sheet.innerHTML = '';
             sheet.appendChild(fragment);
         }
 
-        // ... (Keep handleInput, handleMouseDown, document EventListener, and manualSave as before)
-        function handleInput() {
-            const r = this.dataset.r, c = parseInt(this.dataset.c);
+        function handleInput(ta) {
+            const r = ta.dataset.r, c = parseInt(ta.dataset.c);
             if (c % 2 === 0) {
                 const pinyinCell = document.querySelector(`textarea[data-r="${r}"][data-c="${c + 1}"]`);
-                if (pinyinCell) pinyinCell.value = pinyinPro.pinyin(this.value.replace(/\s+/g, ''), { toneType: 'symbol' });
+                if (pinyinCell) pinyinCell.value = pinyinPro.pinyin(ta.value.replace(/\s+/g, ''), { toneType: 'symbol' });
             }
         }
 
+        // ... (Keep handleMouseDown, copy/keydown, and save functions as before)
         function handleMouseDown(e) {
             if (e.shiftKey && lastClickedCell) {
                 const r1 = parseInt(lastClickedCell.dataset.r), c1 = parseInt(lastClickedCell.dataset.c);
@@ -198,7 +194,7 @@
                 }
             }
             if (e.key === 'Delete' || e.key === 'Backspace') {
-                selectedCells.forEach(ta => { ta.value = ''; });
+                selectedCells.forEach(ta => { ta.value = ''; autoResize(ta); });
                 syncDataFromDOM();
             }
         });
