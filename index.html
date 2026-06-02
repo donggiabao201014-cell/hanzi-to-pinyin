@@ -23,19 +23,10 @@
         .header { background: #2d6a4f; color: #ffffff; font-weight: bold; text-align: center; padding: 10px; position: sticky; top: 0; z-index: 10; }
         
         textarea { 
-    width: 100%; 
-    padding: 8px; 
-    border: none; 
-    box-sizing: border-box; 
-    font-size: 16px; 
-    resize: none; /* Changed from 'both' to 'none' */
-    overflow: hidden; 
-    font-family: inherit; 
-    background: transparent; 
-    min-height: 40px; 
-    min-width: 100px;
-    display: block;
-}
+            width: 100%; padding: 8px; border: none; box-sizing: border-box; font-size: 16px; 
+            resize: none; overflow: hidden; font-family: inherit; background: transparent; 
+            min-height: 40px; min-width: 100px; display: block;
+        }
         
         .pinyin-cell { background: #f8f9fa; }
         button { padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
@@ -75,17 +66,15 @@
             renderGrid();
         };
 
+        function autoResize(ta) {
+            ta.style.height = 'auto';
+            ta.style.height = (ta.scrollHeight) + 'px';
+        }
+
         function triggerAutoSave() {
             clearTimeout(saveTimeout);
             saveTimeout = setTimeout(manualSave, 1000);
         }
-
-        function autoResize(ta) {
-    // Reset height to allow shrinking if text is deleted
-    ta.style.height = '40px'; 
-    // Set to content height
-    ta.style.height = (ta.scrollHeight) + 'px';
-}
 
         function toggleMode() { isSplitMode = !isSplitMode; renderGrid(); }
 
@@ -93,7 +82,7 @@
             gridData.values = {};
             document.querySelectorAll('textarea').forEach(ta => {
                 gridData.values[`${ta.dataset.r},${ta.dataset.c}`] = { 
-                    text: ta.value, width: ta.style.width, height: ta.style.height 
+                    text: ta.value, height: ta.style.height 
                 };
             });
         }
@@ -137,20 +126,17 @@
                     const cellData = gridData.values[`${r},${c}`];
                     if (cellData) {
                         ta.value = cellData.text || "";
-                        if (cellData.width) ta.style.width = cellData.width;
-                        if (cellData.height) ta.style.height = cellData.height;
+                        ta.style.height = cellData.height || '40px';
                     }
 
                     ta.onmousedown = handleMouseDown;
                     ta.oninput = () => { handleInput(ta); autoResize(ta); triggerAutoSave(); };
-                    ta.onmouseup = () => { syncDataFromDOM(); triggerAutoSave(); };
                     
                     cell.appendChild(ta);
                     fragment.appendChild(cell);
                     
-                    // Trigger expansion
-                    if (cellData && cellData.height) ta.style.height = cellData.height;
-                    else autoResize(ta);
+                    // Initial resize for existing content
+                    setTimeout(() => autoResize(ta), 0);
                 }
             }
             sheet.innerHTML = '';
@@ -161,7 +147,10 @@
             const r = ta.dataset.r, c = parseInt(ta.dataset.c);
             if (c % 2 === 0) {
                 const pinyinCell = document.querySelector(`textarea[data-r="${r}"][data-c="${c + 1}"]`);
-                if (pinyinCell) pinyinCell.value = pinyinPro.pinyin(ta.value.replace(/\s+/g, ''), { toneType: 'symbol' });
+                if (pinyinCell) {
+                    pinyinCell.value = pinyinPro.pinyin(ta.value.replace(/\s+/g, ''), { toneType: 'symbol' });
+                    autoResize(pinyinCell);
+                }
             }
         }
 
