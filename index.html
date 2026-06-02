@@ -23,11 +23,19 @@
         .header { background: #2d6a4f; color: #ffffff; font-weight: bold; text-align: center; padding: 10px; position: sticky; top: 0; z-index: 10; }
         
         textarea { 
-            width: 100%; padding: 8px; border: none; box-sizing: border-box; 
-            font-size: 16px; resize: both; overflow: hidden;
-            font-family: inherit; background: transparent; 
-            min-height: 40px; min-width: 100px; display: block;
-        }
+    width: 100%; 
+    padding: 8px; 
+    border: none; 
+    box-sizing: border-box; 
+    font-size: 16px; 
+    resize: none; /* Changed from 'both' to 'none' */
+    overflow: hidden; 
+    font-family: inherit; 
+    background: transparent; 
+    min-height: 40px; 
+    min-width: 100px;
+    display: block;
+}
         
         .pinyin-cell { background: #f8f9fa; }
         button { padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
@@ -73,9 +81,11 @@
         }
 
         function autoResize(ta) {
-            ta.style.height = 'auto';
-            ta.style.height = ta.scrollHeight + 'px';
-        }
+    // Reset height to allow shrinking if text is deleted
+    ta.style.height = '40px'; 
+    // Set to content height
+    ta.style.height = (ta.scrollHeight) + 'px';
+}
 
         function toggleMode() { isSplitMode = !isSplitMode; renderGrid(); }
 
