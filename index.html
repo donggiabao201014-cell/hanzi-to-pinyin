@@ -34,7 +34,6 @@
         .btn-sub { background: #b02a2a; color: white; }
         .btn-mode { background: #555; color: white; }
     </style>
-    <link rel="icon" type="image/png" href="images.png">
 </head>
 <body>
 
@@ -66,9 +65,10 @@
             renderGrid();
         };
 
+        // Resets height to allow shrinking, then sets to scroll height
         function autoResize(ta) {
-            ta.style.height = 'auto';
-            ta.style.height = (ta.scrollHeight) + 'px';
+            ta.style.height = '40px'; 
+            ta.style.height = Math.max(40, ta.scrollHeight) + 'px';
         }
 
         function triggerAutoSave() {
@@ -126,21 +126,16 @@
                     const cellData = gridData.values[`${r},${c}`];
                     if (cellData) {
                         ta.value = cellData.text || "";
-                        // Apply stored height
                         ta.style.height = cellData.height || '40px';
                     }
 
                     ta.onmousedown = handleMouseDown;
-                    ta.oninput = () => { 
-                        handleInput(ta); 
-                        autoResize(ta); 
-                        triggerAutoSave(); 
-                    };
+                    ta.oninput = () => { handleInput(ta); autoResize(ta); triggerAutoSave(); };
                     
                     cell.appendChild(ta);
                     fragment.appendChild(cell);
                     
-                    // Force resize on load to ensure text fits
+                    // Initial resize
                     requestAnimationFrame(() => autoResize(ta));
                 }
             }
@@ -150,12 +145,10 @@
 
         function handleInput(ta) {
             const r = ta.dataset.r, c = parseInt(ta.dataset.c);
-            // Only trigger Pinyin update if it's a Hanzi cell
             if (c % 2 === 0) {
                 const pinyinCell = document.querySelector(`textarea[data-r="${r}"][data-c="${c + 1}"]`);
                 if (pinyinCell) {
                     pinyinCell.value = pinyinPro.pinyin(ta.value.replace(/\s+/g, ''), { toneType: 'symbol' });
-                    // Explicitly resize the Pinyin cell after updating its value
                     autoResize(pinyinCell);
                 }
             }
