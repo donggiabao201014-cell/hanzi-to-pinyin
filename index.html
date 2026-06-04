@@ -5,37 +5,53 @@
     <title>Pinyin Spreadsheet</title>
     <script src="https://unpkg.com/pinyin-pro@3.27.0/dist/index.js"></script>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; padding: 20px; background: #f4f7f6; color: #333; }
-        .controls { margin-bottom: 20px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-        
-        .sheet-container { 
-            overflow: auto; max-width: 95vw; max-height: 80vh; 
-            border: 3px solid #2d6a4f; border-radius: 8px; 
-            transition: all 0.3s ease;
-        }
-        
-        #spreadsheet { display: grid; background: white; width: max-content; }
-        .mode-split { width: 100% !important; }
-        .mode-split #spreadsheet { width: 100% !important; }
+    body { font-family: 'Segoe UI', sans-serif; padding: 20px; background: #f4f7f6; color: #333; }
+    .controls { margin-bottom: 20px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    
+    .sheet-container { 
+        overflow: auto; max-width: 95vw; max-height: 80vh; 
+        border: 3px solid #2d6a4f; border-radius: 8px; 
+        transition: all 0.3s ease;
+    }
+    
+    #spreadsheet { display: grid; background: white; width: max-content; }
+    .mode-split { width: 100% !important; }
+    .mode-split #spreadsheet { width: 100% !important; }
 
-        .cell { border: 1px solid #d8e2dc; padding: 0; position: relative; display: flex; }
-        .cell.selected { background: #cce5ff !important; box-shadow: inset 0 0 0 2px #007bff; }
-        .header { background: #2d6a4f; color: #ffffff; font-weight: bold; text-align: center; padding: 10px; position: sticky; top: 0; z-index: 10; }
-        
-        textarea { 
-            width: 100%; padding: 8px; border: none; box-sizing: border-box; font-size: 16px; 
-            resize: none; overflow: hidden; font-family: inherit; background: transparent; 
-            min-height: 40px; min-width: 100px; display: block;
-        }
-        
-        .pinyin-cell { background: #f8f9fa; }
-        button { padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
-        .btn-add { background: #2d6a4f; color: white; }
-        .btn-sub { background: #b02a2a; color: white; }
-        .btn-mode { background: #555; color: white; }
-        .btn-reset { background: #888; color: white; }
-    </style>
-    <link rel="icon" type="image/png" href="images.png">
+    /* The cell container is now transparent to prevent bleed-through */
+    .cell { 
+        border: 1px solid #d8e2dc; 
+        padding: 0; 
+        position: relative; 
+        display: flex; 
+        background: transparent; 
+    }
+    
+    .cell.selected { background: #cce5ff !important; box-shadow: inset 0 0 0 2px #007bff; }
+    
+    /* Textarea base styles */
+    textarea { 
+        width: 100%; padding: 8px; border: none; box-sizing: border-box; font-size: 16px; 
+        resize: none; overflow: hidden; font-family: inherit; 
+        background: white; /* Default background */
+        min-height: 40px; min-width: 100px; display: block;
+    }
+
+    /* Pinyin column base background */
+    .pinyin-cell textarea { background: #f8f9fa; }
+    
+    /* The Highlight class (only applies to the textarea) */
+    textarea.highlighted { background: #fff3bf !important; }
+    
+    .header { background: #2d6a4f; color: #ffffff; font-weight: bold; text-align: center; padding: 10px; position: sticky; top: 0; z-index: 10; }
+    
+    button { padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+    .btn-add { background: #2d6a4f; color: white; }
+    .btn-sub { background: #b02a2a; color: white; }
+    .btn-mode { background: #555; color: white; }
+    .btn-reset { background: #888; color: white; }
+    .btn-highlight { background: #fcc419; color: black; }
+</style>
 </head>
 <body>
 
@@ -45,9 +61,11 @@
         <button class="btn-sub" onclick="subRow()">- Row</button>
         <button class="btn-add" onclick="addCol()">+ Col</button>
         <button class="btn-sub" onclick="subCol()">- Col</button>
+        <button class="btn-highlight" onclick="highlightCells()">Highlight Text</button>
         <button class="btn-mode" onclick="toggleMode()">Toggle Split/Scroll</button>
         <button onclick="manualSave()" style="background: #217346; color: white;">Save</button>
         <button class="btn-reset" onclick="resetGrid()">Reset</button>
+        <button id="highlightBtn">Highlight</button>
         <small id="status"></small>
     </div>
 
@@ -73,21 +91,26 @@
             ta.style.height = Math.max(40, ta.scrollHeight) + 'px';
         }
 
-        function triggerAutoSave() {
-            clearTimeout(saveTimeout);
-            saveTimeout = setTimeout(manualSave, 1000);
+        // Updated Highlight Logic
+        function highlightCells() {
+            selectedCells.forEach(ta => {
+                ta.classList.toggle('highlighted');
+            });
+            syncDataFromDOM();
+            manualSave();
         }
 
-        // New Reset Function
         function resetGrid() {
             if (confirm("Are you sure you want to clear everything and reset to default?")) {
                 gridData = { rows: 5, cols: 3, values: {} };
                 localStorage.removeItem('pinyinData');
                 renderGrid();
-                const status = document.getElementById('status');
-                status.textContent = "Reset complete!";
-                setTimeout(() => status.textContent = "", 2000);
             }
+        }
+
+        function triggerAutoSave() {
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(manualSave, 1000);
         }
 
         function toggleMode() { isSplitMode = !isSplitMode; renderGrid(); }
@@ -96,7 +119,9 @@
             gridData.values = {};
             document.querySelectorAll('textarea').forEach(ta => {
                 gridData.values[`${ta.dataset.r},${ta.dataset.c}`] = { 
-                    text: ta.value, height: ta.style.height 
+                    text: ta.value, 
+                    height: ta.style.height,
+                    isHighlighted: ta.classList.contains('highlighted')
                 };
             });
         }
@@ -134,6 +159,7 @@
                 for (let c = 0; c < gridData.cols * 2; c++) {
                     const cell = document.createElement('div');
                     cell.className = 'cell ' + (c % 2 !== 0 ? 'pinyin-cell' : '');
+                    
                     const ta = document.createElement('textarea');
                     ta.dataset.r = r; ta.dataset.c = c;
                     
@@ -141,6 +167,7 @@
                     if (cellData) {
                         ta.value = cellData.text || "";
                         ta.style.height = cellData.height || '40px';
+                        if (cellData.isHighlighted) ta.classList.add('highlighted');
                     }
 
                     ta.onmousedown = handleMouseDown;
@@ -183,6 +210,8 @@
                 document.querySelectorAll('.cell').forEach(cl => cl.classList.remove('selected'));
                 selectedCells.clear();
                 lastClickedCell = this;
+                this.parentElement.classList.add('selected');
+                selectedCells.add(this);
             }
         }
 
