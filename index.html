@@ -2,51 +2,83 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Pinyin Spreadsheet</title>
+    <title>Pinyin Spreadsheet & Hanzii</title>
     <script src="https://unpkg.com/pinyin-pro@3.27.0/dist/index.js"></script>
     <style>
-    body { font-family: 'Segoe UI', sans-serif; padding: 20px; background: #f4f7f6; color: #333; }
-    .controls { margin-bottom: 20px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-    .sheet-container { overflow: auto; max-width: 95vw; max-height: 80vh; border: 3px solid #2d6a4f; border-radius: 8px; transition: all 0.3s ease; }
-    #spreadsheet { display: grid; background: white; width: max-content; }
-    .mode-split { width: 100% !important; }
-    .mode-split #spreadsheet { width: 100% !important; }
-    .cell { border: 1px solid #d8e2dc; padding: 0; position: relative; display: flex; background: transparent; }
-    .cell.selected { background: #cce5ff !important; box-shadow: inset 0 0 0 2px #007bff; }
-    textarea { width: 100%; padding: 8px; border: none; box-sizing: border-box; font-size: 16px; resize: none; overflow: hidden; font-family: inherit; background: white; min-height: 40px; min-width: 100px; display: block; }
-    .pinyin-cell textarea { background: #f8f9fa; }
-    textarea.highlighted { background: #fff3bf !important; }
-    .header { background: #2d6a4f; color: #ffffff; font-weight: bold; text-align: center; padding: 10px; position: sticky; top: 0; z-index: 10; }
-    button { padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
-    .btn-add { background: #2d6a4f; color: white; }
-    .btn-sub { background: #b02a2a; color: white; }
-    .btn-mode { background: #555; color: white; }
-    .btn-reset { background: #888; color: white; }
-    .btn-highlight { background: #fcc419; color: black; }
-    .btn-undo { background: #444; color: white; }
-</style>
+        body { font-family: 'Segoe UI', sans-serif; padding: 20px; background: #f4f7f6; color: #333; }
+        
+        /* Tab Styles */
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
+        .tab-btn { padding: 10px 20px; cursor: pointer; background: #ddd; border: none; border-radius: 4px; font-weight: bold; }
+        .tab-btn.active { background: #2d6a4f; color: white; }
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; }
+        .dict-container { width: 100%; height: 80vh; border: 3px solid #2d6a4f; border-radius: 8px; }
+
+        /* Your Original Styles */
+        .controls { margin-bottom: 20px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+        .sheet-container { overflow: auto; max-width: 95vw; max-height: 70vh; border: 3px solid #2d6a4f; border-radius: 8px; transition: all 0.3s ease; }
+        #spreadsheet { display: grid; background: white; width: max-content; }
+        .mode-split { width: 100% !important; }
+        .mode-split #spreadsheet { width: 100% !important; }
+        .cell { border: 1px solid #d8e2dc; padding: 0; position: relative; display: flex; background: transparent; }
+        .cell.selected { background: #cce5ff !important; box-shadow: inset 0 0 0 2px #007bff; }
+        textarea { width: 100%; padding: 8px; border: none; box-sizing: border-box; font-size: 16px; resize: none; overflow: hidden; font-family: inherit; background: white; min-height: 40px; min-width: 100px; display: block; }
+        .pinyin-cell textarea { background: #f8f9fa; }
+        textarea.highlighted { background: #fff3bf !important; }
+        .header { background: #2d6a4f; color: #ffffff; font-weight: bold; text-align: center; padding: 10px; position: sticky; top: 0; z-index: 10; }
+        
+        /* Your Original Button Colors */
+        button { padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .btn-add { background: #2d6a4f; color: white; }
+        .btn-sub { background: #b02a2a; color: white; }
+        .btn-mode { background: #555; color: white; }
+        .btn-reset { background: #888; color: white; }
+        .btn-highlight { background: #fcc419; color: black; }
+        .btn-undo { background: #444; color: white; }
+    </style>
+    <link rel="icon" type="image/png" href="images.png"
 </head>
 <body>
 
-    <h2>Pinyin Spreadsheet</h2>
-    <div class="controls">
-        <button class="btn-add" onclick="addRow()">+ Row</button>
-        <button class="btn-sub" onclick="subRow()">- Row</button>
-        <button class="btn-add" onclick="addCol()">+ Col</button>
-        <button class="btn-sub" onclick="subCol()">- Col</button>
-        <button class="btn-highlight" onclick="highlightCells()">Highlight Text</button>
-        <button class="btn-mode" onclick="toggleMode()">Toggle Split/Scroll</button>
-        <button onclick="manualSave()" style="background: #217346; color: white;">Save</button>
-        <button class="btn-reset" onclick="resetGrid()">Reset</button>
-        <button class="btn-undo" onclick="undo()">Undo</button>
-        <small id="status"></small>
+    <h2>Pinyin Spreadsheet & Hanzii</h2>
+    
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('editor', this)">Editor</button>
+        <button class="tab-btn" onclick="switchTab('dict', this)">Dictionary (Hanzii)</button>
     </div>
 
-    <div class="sheet-container" id="container">
-        <div id="spreadsheet"></div>
+    <div id="editor" class="tab-panel active">
+        <div class="controls">
+            <button class="btn-add" onclick="addRow()">+ Row</button>
+            <button class="btn-sub" onclick="subRow()">- Row</button>
+            <button class="btn-add" onclick="addCol()">+ Col</button>
+            <button class="btn-sub" onclick="subCol()">- Col</button>
+            <button class="btn-highlight" onclick="highlightCells()">Highlight Text</button>
+            <button class="btn-mode" onclick="toggleMode()">Toggle Split/Scroll</button>
+            <button onclick="manualSave()" style="background: #217346; color: white;">Save</button>
+            <button class="btn-reset" onclick="resetGrid()">Reset</button>
+            <button class="btn-undo" onclick="undo()">Undo</button>
+            <small id="status"></small>
+        </div>
+        <div class="sheet-container" id="container">
+            <div id="spreadsheet"></div>
+        </div>
+    </div>
+
+    <div id="dict" class="tab-panel">
+        <iframe class="dict-container" src="https://hanzii.net/?hl=vi" title="Hanzii Dictionary"></iframe>
     </div>
 
     <script>
+        function switchTab(id, btn) {
+            document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            btn.classList.add('active');
+        }
+
+        // --- All your Original Logic ---
         let gridData = { rows: 5, cols: 3, values: {} };
         let selectedCells = new Set();
         let lastClickedCell = null;
@@ -73,7 +105,7 @@
                 gridData = JSON.parse(history.pop());
                 localStorage.setItem('pinyinHistory', JSON.stringify(history));
                 renderGrid();
-                manualSave(); // This forces the "undo" state to overwrite the saved file
+                manualSave();
                 const status = document.getElementById('status');
                 status.textContent = "Undo applied!";
                 setTimeout(() => status.textContent = "", 2000);
@@ -119,7 +151,6 @@
             });
         }
 
-        // --- Functions kept exactly as requested ---
         function addRow() { saveHistory(); syncDataFromDOM(); gridData.rows++; renderGrid(); manualSave(); }
         function subRow() { saveHistory(); syncDataFromDOM(); if(gridData.rows > 1) gridData.rows--; renderGrid(); manualSave(); }
         function addCol() { saveHistory(); syncDataFromDOM(); gridData.cols++; renderGrid(); manualSave(); }
